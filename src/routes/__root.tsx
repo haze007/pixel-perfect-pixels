@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
-import { useAuth } from "@/hooks/use-auth";
 
 import appCss from "../styles.css?url";
 
@@ -76,23 +75,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthUpdater />
       <Outlet />
     </QueryClientProvider>
   );
-}
-
-function AuthUpdater() {
-  const auth = useAuth();
-  const router = Route.useRouter();
-
-  // Update router context with auth state when it changes
-  if (router.options.context) {
-    router.options.context.auth = {
-      isAuthenticated: auth.isAuthenticated,
-      user: auth.user,
-    };
-  }
-
-  return null;
 }
