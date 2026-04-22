@@ -17,11 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const NAV_ITEMS = [
-  { to: "/_authenticated/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/_authenticated/studio", label: "Recipe Studio", icon: FlaskConical },
-  { to: "/_authenticated/recipes", label: "Recipe Library", icon: BookOpen },
-  { to: "/_authenticated/catalogue", label: "My Catalogue", icon: Beaker },
-] as const;
+  { to: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
+  { to: "/studio" as const, label: "Recipe Studio", icon: FlaskConical },
+  { to: "/recipes" as const, label: "Recipe Library", icon: BookOpen },
+  { to: "/catalogue" as const, label: "My Catalogue", icon: Beaker },
+];
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -46,7 +46,6 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
           sidebarOpen ? "w-60" : "w-14"
         }`}
       >
-        {/* Logo */}
         <div className="flex h-12 items-center gap-2 border-b border-border px-3">
           <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
             TS
@@ -54,10 +53,9 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
           {sidebarOpen && <span className="text-sm font-semibold text-foreground">TannerySim</span>}
         </div>
 
-        {/* Nav */}
         <nav className="flex-1 space-y-1 p-2">
           {NAV_ITEMS.map((item) => {
-            const active = location.pathname === item.to.replace("/_authenticated", "");
+            const active = location.pathname === item.to;
             return (
               <Link
                 key={item.to}
@@ -75,7 +73,6 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
           })}
         </nav>
 
-        {/* Collapse button */}
         <div className="border-t border-border p-2">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -87,9 +84,7 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
         </div>
       </aside>
 
-      {/* Main area */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* TopBar */}
         <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-surface-1 px-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="text-foreground font-medium">TannerySim</span>
@@ -98,12 +93,7 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
           </div>
           <div className="flex items-center gap-2">
             {rightPanel && (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setRightOpen(!rightOpen)}
-                className="h-8 w-8"
-              >
+              <Button variant="ghost" size="icon" onClick={() => setRightOpen(!rightOpen)} className="h-8 w-8">
                 {rightOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
               </Button>
             )}
@@ -111,19 +101,13 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
               <LogOut className="h-4 w-4" />
             </Button>
             <Avatar className="h-7 w-7">
-              <AvatarFallback className="text-xs bg-primary text-primary-foreground">
-                {initials}
-              </AvatarFallback>
+              <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>
             </Avatar>
           </div>
         </header>
 
-        {/* Content area */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Main Canvas */}
           <main className="flex-1 overflow-hidden">{children}</main>
-
-          {/* Right Panel */}
           {rightPanel && rightOpen && (
             <aside className="w-80 shrink-0 border-l border-border bg-surface-1 overflow-y-auto">
               {rightPanel}

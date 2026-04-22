@@ -27,7 +27,7 @@ function LoginPage() {
     setLoading(true);
     try {
       await signIn(email, password);
-      navigate({ to: "/_authenticated/studio" });
+      navigate({ to: "/studio" });
     } catch (err: any) {
       setError(err.message || "Failed to sign in");
     } finally {

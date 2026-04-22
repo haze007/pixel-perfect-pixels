@@ -22,7 +22,7 @@ function Index() {
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center space-y-4">
           <h1 className="text-3xl font-bold text-foreground">Welcome back</h1>
-          <Link to="/_authenticated/studio">
+          <Link to="/studio">
             <Button>Open Studio</Button>
           </Link>
         </div>
