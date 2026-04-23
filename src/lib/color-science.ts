@@ -11,10 +11,14 @@ export function deltaE76(
 /**
  * Simple additive LAB mix: weighted average by percentage.
  * Returns predicted LAB for a multi-step recipe.
+ *
+ * @param uptakeFactor 0–1 multiplier from process conditions (pH, temp, float ratio, etc.)
+ *   1.0 = optimal conditions, lower values push the result back toward the substrate base.
  */
 export function predictRecipeLab(
   steps: Array<{ lab_l: number | null; lab_a: number | null; lab_b: number | null; percentage: number }>,
-  baseLab: { l: number; a: number; b: number }
+  baseLab: { l: number; a: number; b: number },
+  uptakeFactor = 1.0,
 ): { l: number; a: number; b: number } {
   if (steps.length === 0) return baseLab;
 
@@ -32,8 +36,9 @@ export function predictRecipeLab(
   if (totalPct === 0) return baseLab;
 
   // Blend: base * (1 - influence) + chemicals * influence
-  // influence = clamp(totalPct / 100, 0, 1)
-  const influence = Math.min(totalPct / 100, 1);
+  // uptakeFactor scales how much the dye actually absorbs given the process conditions.
+  const rawInfluence = Math.min(totalPct / 100, 1);
+  const influence    = rawInfluence * Math.max(0.05, uptakeFactor); // floor at 5% so some dye always shows
   const chemL = sumL / totalPct;
   const chemA = sumA / totalPct;
   const chemB = sumB / totalPct;

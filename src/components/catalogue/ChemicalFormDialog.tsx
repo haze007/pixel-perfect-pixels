@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ interface ChemicalFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   chemical?: Chemical | null;
-  tanneryId: string;
+  tanneryId: string | undefined;
   onSubmit: (data: ChemicalInsert | (ChemicalUpdate & { id: string })) => void;
   loading?: boolean;
 }
@@ -35,11 +35,24 @@ export function ChemicalFormDialog({
   const [labA, setLabA] = useState(chemical?.lab_a ?? 0);
   const [labB, setLabB] = useState(chemical?.lab_b ?? 0);
 
+  // Reset form whenever the dialog opens or the target chemical changes
+  useEffect(() => {
+    if (!open) return;
+    setName(chemical?.name ?? "");
+    setCategory(chemical?.category ?? "dye");
+    setSupplier(chemical?.supplier ?? "");
+    setColourIndex(chemical?.colour_index ?? "");
+    setLabL(chemical?.lab_l ?? 50);
+    setLabA(chemical?.lab_a ?? 0);
+    setLabB(chemical?.lab_b ?? 0);
+  }, [open, chemical?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const isEdit = !!chemical;
   const hex = labToHex(labL, labA, labB);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!tanneryId) return; // shouldn't happen — button is disabled
     const base = {
       name,
       category: category as any,
@@ -118,7 +131,7 @@ export function ChemicalFormDialog({
 
           <div className="flex justify-end gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={loading}>{isEdit ? "Save" : "Add"}</Button>
+            <Button type="submit" disabled={loading || !tanneryId}>{isEdit ? "Save" : "Add"}</Button>
           </div>
         </form>
       </DialogContent>

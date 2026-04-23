@@ -1,8 +1,7 @@
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { AddCircleBoldDuotone, TrashBinMinimalisticBoldDuotone, AtomBoldDuotone } from "solar-icon-set";
 import type { Chemical } from "@/hooks/use-chemicals";
 
 export interface RecipeStep {
@@ -19,21 +18,19 @@ interface RecipeStepEditorProps {
   steps: RecipeStep[];
   onChange: (steps: RecipeStep[]) => void;
   chemicals: Chemical[];
+  /** Called when user taps "Browse chemicals" — opens the chemicals sheet in the parent */
+  onOpenChemicals?: () => void;
 }
 
-function newStepId() {
-  return crypto.randomUUID();
-}
-
-export function RecipeStepEditor({ steps, onChange, chemicals }: RecipeStepEditorProps) {
+export function RecipeStepEditor({ steps, onChange, chemicals, onOpenChemicals }: RecipeStepEditorProps) {
   const addStep = () => {
     onChange([
       ...steps,
       {
-        id: newStepId(),
+        id: crypto.randomUUID(),
         chemical_id: "",
         chemical_name: "",
-        percentage: 1,
+        percentage: 2,
         duration_min: 30,
         temperature_c: 40,
         notes: "",
@@ -44,7 +41,6 @@ export function RecipeStepEditor({ steps, onChange, chemicals }: RecipeStepEdito
   const updateStep = (idx: number, patch: Partial<RecipeStep>) => {
     const next = [...steps];
     next[idx] = { ...next[idx], ...patch };
-    // If chemical changed, update name
     if (patch.chemical_id) {
       const chem = chemicals.find((c) => c.id === patch.chemical_id);
       if (chem) next[idx].chemical_name = chem.name;
@@ -56,82 +52,154 @@ export function RecipeStepEditor({ steps, onChange, chemicals }: RecipeStepEdito
     onChange(steps.filter((_, i) => i !== idx));
   };
 
+  const hasChemicals = chemicals.length > 0;
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">Recipe Steps</h3>
-        <Button variant="outline" size="sm" onClick={addStep}>
-          <Plus className="h-3.5 w-3.5 mr-1" />Add Step
-        </Button>
+        <div className="flex items-center gap-1.5">
+          {onOpenChemicals && (
+            <button
+              onClick={onOpenChemicals}
+              className="flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground hover:bg-surface-2 transition-colors"
+              title="Browse chemical library"
+            >
+              <AtomBoldDuotone size={12} color="currentColor" />
+              Library
+            </button>
+          )}
+          <Button
+            variant="outline" size="sm"
+            className="gap-1.5 h-7 text-xs"
+            onClick={addStep}
+            disabled={!hasChemicals}
+            title={hasChemicals ? "Add a step" : "No chemicals available — open Library first"}
+          >
+            <AddCircleBoldDuotone size={13} />
+            Add Step
+          </Button>
+        </div>
       </div>
 
+      {/* Empty state */}
       {steps.length === 0 && (
-        <p className="text-xs text-muted-foreground py-4 text-center">No steps yet. Add a step to start building your recipe.</p>
+        <div className="rounded-xl border border-dashed border-border bg-surface-1/50 py-8 px-4 text-center space-y-2">
+          {hasChemicals ? (
+            <>
+              <p className="text-xs text-muted-foreground">No steps yet.</p>
+              <p className="text-[10px] text-muted-foreground/70">
+                Tap <strong>Add Step</strong> above or pick from the{" "}
+                {onOpenChemicals ? (
+                  <button
+                    onClick={onOpenChemicals}
+                    className="text-primary underline underline-offset-2 hover:no-underline"
+                  >
+                    chemical library
+                  </button>
+                ) : (
+                  "chemical library"
+                )}.
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex justify-center mb-2">
+                <div className="h-10 w-10 rounded-xl bg-surface-2 flex items-center justify-center">
+                  <AtomBoldDuotone size={20} color="oklch(0.32 0.09 255 / 0.5)" />
+                </div>
+              </div>
+              <p className="text-xs font-medium text-foreground">No chemicals loaded</p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                The community chemical library may not be seeded yet, or your catalogue is empty.
+              </p>
+              {onOpenChemicals && (
+                <button
+                  onClick={onOpenChemicals}
+                  className="mt-1 text-[10px] text-primary hover:underline"
+                >
+                  Open Library →
+                </button>
+              )}
+            </>
+          )}
+        </div>
       )}
 
+      {/* Steps list */}
       <div className="space-y-2">
         {steps.map((step, idx) => (
-          <div key={step.id} className="flex items-start gap-2 rounded-lg border border-border bg-surface-1 p-3">
-            <div className="flex items-center pt-2 text-muted-foreground">
-              <GripVertical className="h-4 w-4" />
-              <span className="text-xs font-mono w-4">{idx + 1}</span>
-            </div>
-            <div className="flex-1 grid grid-cols-4 gap-2">
-              <div className="col-span-2 space-y-1">
-                <label className="text-xs text-muted-foreground">Chemical</label>
+          <div key={step.id} className="rounded-lg border border-border bg-surface-1 p-3 space-y-2 animate-fade-in">
+            {/* Row 1: step number + chemical selector */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-muted-foreground/60 w-4 shrink-0 text-center">{idx + 1}</span>
+              <div className="flex-1">
                 <Select value={step.chemical_id} onValueChange={(v) => updateStep(idx, { chemical_id: v })}>
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Select chemical" />
+                  <SelectTrigger className="h-8 text-xs w-full">
+                    <SelectValue placeholder="Select chemical…" />
                   </SelectTrigger>
                   <SelectContent>
-                    {chemicals.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
+                    {chemicals.length === 0 ? (
+                      <div className="px-3 py-2 text-xs text-muted-foreground">No chemicals — open Library</div>
+                    ) : (
+                      chemicals.map((c) => (
+                        <SelectItem key={c.id} value={c.id} className="text-xs">{c.name}</SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">% Weight</label>
+              <Button
+                variant="ghost" size="icon"
+                className="h-7 w-7 shrink-0 text-destructive hover:text-destructive/80"
+                onClick={() => removeStep(idx)}
+              >
+                <TrashBinMinimalisticBoldDuotone size={14} color="currentColor" />
+              </Button>
+            </div>
+
+            {/* Row 2: % weight, temp, duration */}
+            <div className="grid grid-cols-3 gap-2 pl-6">
+              <div className="space-y-0.5">
+                <label className="text-[9px] text-muted-foreground uppercase tracking-wide">% Weight</label>
                 <Input
                   type="number"
                   value={step.percentage}
                   onChange={(e) => updateStep(idx, { percentage: parseFloat(e.target.value) || 0 })}
-                  className="h-8 text-xs"
-                  min={0}
-                  step={0.1}
+                  className="h-7 text-xs"
+                  min={0} step={0.5}
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Temp °C</label>
+              <div className="space-y-0.5">
+                <label className="text-[9px] text-muted-foreground uppercase tracking-wide">Temp °C</label>
                 <Input
                   type="number"
                   value={step.temperature_c}
                   onChange={(e) => updateStep(idx, { temperature_c: parseFloat(e.target.value) || 0 })}
-                  className="h-8 text-xs"
+                  className="h-7 text-xs"
                 />
               </div>
-              <div className="col-span-2 space-y-1">
-                <label className="text-xs text-muted-foreground">Duration (min)</label>
+              <div className="space-y-0.5">
+                <label className="text-[9px] text-muted-foreground uppercase tracking-wide">Min</label>
                 <Input
                   type="number"
                   value={step.duration_min}
                   onChange={(e) => updateStep(idx, { duration_min: parseFloat(e.target.value) || 0 })}
-                  className="h-8 text-xs"
-                />
-              </div>
-              <div className="col-span-2 space-y-1">
-                <label className="text-xs text-muted-foreground">Notes</label>
-                <Input
-                  value={step.notes}
-                  onChange={(e) => updateStep(idx, { notes: e.target.value })}
-                  className="h-8 text-xs"
-                  placeholder="Optional"
+                  className="h-7 text-xs"
                 />
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7 mt-5 text-destructive" onClick={() => removeStep(idx)}>
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+
+            {/* Row 3: notes (collapsed by default) */}
+            <div className="pl-6">
+              <Input
+                value={step.notes}
+                onChange={(e) => updateStep(idx, { notes: e.target.value })}
+                className="h-7 text-xs"
+                placeholder="Notes (optional)"
+              />
+            </div>
           </div>
         ))}
       </div>
