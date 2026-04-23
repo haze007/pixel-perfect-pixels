@@ -26,6 +26,7 @@ const NAV_ITEMS = [
   { to: "/studio" as const, label: "Recipe Studio", icon: FlaskConical },
   { to: "/recipes" as const, label: "Recipe Library", icon: BookOpen },
   { to: "/catalogue" as const, label: "My Catalogue", icon: Beaker },
+  { to: "/settings" as const, label: "Settings", icon: Settings },
 ];
 
 interface AppShellProps {
