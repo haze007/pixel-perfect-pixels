@@ -12,15 +12,21 @@ import {
   Beaker,
   PanelRightClose,
   PanelRightOpen,
+  Bot,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AiChatPanel } from "@/components/ai/AiChatPanel";
+import { useChemicals } from "@/hooks/use-chemicals";
 
 const NAV_ITEMS = [
   { to: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
   { to: "/studio" as const, label: "Recipe Studio", icon: FlaskConical },
   { to: "/recipes" as const, label: "Recipe Library", icon: BookOpen },
   { to: "/catalogue" as const, label: "My Catalogue", icon: Beaker },
+  { to: "/settings" as const, label: "Settings", icon: Settings },
 ];
 
 interface AppShellProps {
@@ -31,7 +37,9 @@ interface AppShellProps {
 export function AppShell({ children, rightPanel }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(!!rightPanel);
+  const [rightTab, setRightTab] = useState<"panel" | "ai">(rightPanel ? "panel" : "ai");
   const { user } = useAuth();
+  const { data: chemicals } = useChemicals();
   const location = useLocation();
 
   const initials = user?.user_metadata?.full_name
@@ -73,7 +81,7 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
           })}
         </nav>
 
-        <div className="border-t border-border p-2">
+        <div className="border-t border-border p-2 space-y-1">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground"
@@ -92,9 +100,18 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
             <span>Leather Chemistry Simulation</span>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => { setRightOpen(!rightOpen); if (!rightOpen) setRightTab("ai"); }}
+              className="h-8 w-8"
+              title="AI Assistant"
+            >
+              <Bot className="h-4 w-4" />
+            </Button>
             {rightPanel && (
-              <Button variant="ghost" size="icon" onClick={() => setRightOpen(!rightOpen)} className="h-8 w-8">
-                {rightOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+              <Button variant="ghost" size="icon" onClick={() => { setRightOpen(!rightOpen); setRightTab("panel"); }} className="h-8 w-8">
+                {rightOpen && rightTab === "panel" ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
               </Button>
             )}
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => signOut()}>
@@ -108,9 +125,27 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
 
         <div className="flex flex-1 overflow-hidden">
           <main className="flex-1 overflow-hidden">{children}</main>
-          {rightPanel && rightOpen && (
-            <aside className="w-80 shrink-0 border-l border-border bg-surface-1 overflow-y-auto">
-              {rightPanel}
+          {rightOpen && (
+            <aside className="w-80 shrink-0 border-l border-border bg-surface-1 flex flex-col overflow-hidden">
+              {rightPanel ? (
+                <>
+                  <Tabs value={rightTab} onValueChange={(v) => setRightTab(v as "panel" | "ai")} className="flex flex-col h-full">
+                    <TabsList className="mx-2 mt-2 bg-surface-2">
+                      <TabsTrigger value="panel" className="text-xs flex-1">Details</TabsTrigger>
+                      <TabsTrigger value="ai" className="text-xs flex-1">AI Chat</TabsTrigger>
+                    </TabsList>
+                    <div className="flex-1 overflow-hidden">
+                      {rightTab === "panel" ? (
+                        <div className="h-full overflow-y-auto">{rightPanel}</div>
+                      ) : (
+                        <AiChatPanel chemicals={chemicals ?? []} />
+                      )}
+                    </div>
+                  </Tabs>
+                </>
+              ) : (
+                <AiChatPanel chemicals={chemicals ?? []} />
+              )}
             </aside>
           )}
         </div>
