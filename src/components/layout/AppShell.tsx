@@ -3,30 +3,28 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { signOut } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 import {
-  ChevronLeft,
-  ChevronRight,
-  LayoutDashboard,
-  FlaskConical,
-  BookOpen,
-  LogOut,
-  Beaker,
-  PanelRightClose,
-  PanelRightOpen,
-  Bot,
-  Settings,
-} from "lucide-react";
+  Home2BoldDuotone,
+  FlaskBoldDuotone,
+  BookBoldDuotone,
+  Logout2BoldDuotone,
+  Dropper2BoldDuotone,
+  SettingsBoldDuotone,
+  ChatRoundDotsBoldDuotone,
+  SidebarMinimalisticBoldDuotone,
+} from "solar-icon-set";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AiChatPanel } from "@/components/ai/AiChatPanel";
 import { useChemicals } from "@/hooks/use-chemicals";
+import { ChevronLeft, ChevronRight, PanelRightClose, PanelRightOpen } from "lucide-react";
 
 const NAV_ITEMS = [
-  { to: "/dashboard" as const, label: "Dashboard", icon: LayoutDashboard },
-  { to: "/studio" as const, label: "Recipe Studio", icon: FlaskConical },
-  { to: "/recipes" as const, label: "Recipe Library", icon: BookOpen },
-  { to: "/catalogue" as const, label: "My Catalogue", icon: Beaker },
-  { to: "/settings" as const, label: "Settings", icon: Settings },
+  { to: "/dashboard" as const, label: "Dashboard", Icon: Home2BoldDuotone },
+  { to: "/studio" as const, label: "Recipe Studio", Icon: FlaskBoldDuotone },
+  { to: "/recipes" as const, label: "Recipe Library", Icon: BookBoldDuotone },
+  { to: "/catalogue" as const, label: "My Catalogue", Icon: Dropper2BoldDuotone },
+  { to: "/settings" as const, label: "Settings", Icon: SettingsBoldDuotone },
 ];
 
 interface AppShellProps {
@@ -74,7 +72,7 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
                 }`}
               >
-                <item.icon className="h-4 w-4 shrink-0" />
+                <item.Icon size={18} />
                 {sidebarOpen && <span>{item.label}</span>}
               </Link>
             );
@@ -107,7 +105,7 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
               className="h-8 w-8"
               title="AI Assistant"
             >
-              <Bot className="h-4 w-4" />
+              <ChatRoundDotsBoldDuotone size={16} />
             </Button>
             {rightPanel && (
               <Button variant="ghost" size="icon" onClick={() => { setRightOpen(!rightOpen); setRightTab("panel"); }} className="h-8 w-8">
@@ -115,7 +113,7 @@ export function AppShell({ children, rightPanel }: AppShellProps) {
               </Button>
             )}
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => signOut()}>
-              <LogOut className="h-4 w-4" />
+              <Logout2BoldDuotone size={16} />
             </Button>
             <Avatar className="h-7 w-7">
               <AvatarFallback className="text-xs bg-primary text-primary-foreground">{initials}</AvatarFallback>

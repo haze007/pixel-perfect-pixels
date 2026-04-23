@@ -3,6 +3,7 @@ import { useState } from "react";
 import { resetPassword } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { AuthLayout } from "@/components/auth/AuthLayout";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
@@ -33,36 +34,38 @@ function ForgotPasswordPage() {
 
   if (sent) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="max-w-sm text-center space-y-4">
-          <h1 className="text-2xl font-bold text-foreground">Check your email</h1>
+      <AuthLayout title="Check your email" subtitle="Password reset link sent">
+        <div className="space-y-4 text-center py-4">
           <p className="text-sm text-muted-foreground">
-            If an account exists for <strong>{email}</strong>, we sent a password reset link.
+            If an account exists for <strong className="text-foreground">{email}</strong>, we sent a password reset link.
           </p>
-          <Link to="/login" className="text-primary hover:underline text-sm">Back to sign in</Link>
+          <Link to="/login" className="inline-block text-sm text-primary font-medium hover:underline">
+            Back to sign in
+          </Link>
         </div>
-      </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground">Reset password</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Enter your email to receive a reset link</p>
+    <AuthLayout title="Reset password" subtitle="Enter your email to receive a reset link">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">Email</label>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required className="h-10 bg-surface-2 border-border" />
         </div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required />
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Sending..." : "Send reset link"}
-          </Button>
-        </form>
-        <p className="text-center text-sm text-muted-foreground">
-          <Link to="/login" className="text-primary hover:underline">Back to sign in</Link>
-        </p>
-      </div>
-    </div>
+        <Button type="submit" className="w-full h-10" disabled={loading}>
+          {loading ? "Sending..." : "Send reset link"}
+        </Button>
+      </form>
+      <p className="text-center text-sm text-muted-foreground">
+        <Link to="/login" className="text-primary font-medium hover:underline">Back to sign in</Link>
+      </p>
+    </AuthLayout>
   );
 }
