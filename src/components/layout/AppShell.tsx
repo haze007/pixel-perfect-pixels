@@ -20,7 +20,7 @@ import { ChevronLeft, ChevronRight, PanelRightClose, PanelRightOpen } from "luci
 
 const NAV_ITEMS = [
   { to: "/dashboard" as const, label: "Dashboard", Icon: Home2BoldDuotone },
-  { to: "/studio" as const, label: "Recipe Studio", Icon: FlaskBoldDuotone },
+  { to: "/studio" as const, label: "Recipe Studio", Icon: TestTubeBoldDuotone },
   { to: "/recipes" as const, label: "Recipe Library", Icon: BookBoldDuotone },
   { to: "/catalogue" as const, label: "My Catalogue", Icon: Dropper2BoldDuotone },
   { to: "/settings" as const, label: "Settings", Icon: SettingsBoldDuotone },
