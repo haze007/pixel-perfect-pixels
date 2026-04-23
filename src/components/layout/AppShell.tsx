@@ -4,13 +4,12 @@ import { signOut } from "@/lib/auth";
 import { useAuth } from "@/hooks/use-auth";
 import {
   Home2BoldDuotone,
-  FlaskBoldDuotone,
+  TestTubeBoldDuotone,
   BookBoldDuotone,
   Logout2BoldDuotone,
   Dropper2BoldDuotone,
   SettingsBoldDuotone,
   ChatRoundDotsBoldDuotone,
-  SidebarMinimalisticBoldDuotone,
 } from "solar-icon-set";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
