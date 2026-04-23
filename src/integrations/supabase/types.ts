@@ -556,6 +556,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      provision_tannery: {
+        Args: { p_name: string; p_slug: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "operator" | "viewer"

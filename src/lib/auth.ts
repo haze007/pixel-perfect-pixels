@@ -5,7 +5,7 @@ export async function signUp(email: string, password: string, fullName: string, 
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      data: { full_name: fullName, tannery_name: tanneryName },
       emailRedirectTo: typeof window !== "undefined" ? window.location.origin : undefined,
     },
   });
@@ -13,30 +13,33 @@ export async function signUp(email: string, password: string, fullName: string, 
   if (authError) throw authError;
   if (!authData.user) throw new Error("Signup failed");
 
-  const slug = tanneryName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-
-  const { data: tannery, error: tErr } = await supabase
-    .from("tanneries")
-    .insert({ name: tanneryName, slug, owner_id: authData.user.id })
-    .select("id")
-    .single();
-
-  if (tErr) throw tErr;
-
-  await supabase.from("user_roles").insert({
-    user_id: authData.user.id,
-    tannery_id: tannery.id,
-    role: "admin",
-  });
-
-  await supabase.from("user_profiles").update({ tannery_id: tannery.id }).eq("id", authData.user.id);
-
   return authData;
+}
+
+/** Call after login to ensure the user has a tannery provisioned */
+export async function ensureTannery() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Check if already provisioned
+  const { data: existingId } = await supabase.rpc("get_user_tannery_id", { _user_id: user.id });
+  if (existingId) return;
+
+  // Provision from metadata
+  const tanneryName = user.user_metadata?.tannery_name;
+  if (!tanneryName) return;
+
+  const slug = tanneryName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  await supabase.rpc("provision_tannery", { p_name: tanneryName, p_slug: slug });
 }
 
 export async function signIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
+
+  // Provision tannery on first login after email confirmation
+  await ensureTannery();
+
   return data;
 }
 
