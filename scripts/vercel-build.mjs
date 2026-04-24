@@ -7,6 +7,12 @@
  *   .vercel/output/functions/       ← Serverless function (Node.js)
  *   .vercel/output/config.json      ← Route rules
  *
+ * Key difference vs naive approach: server.js has external imports (h3-v2,
+ * @tanstack/router-core, react, etc.) that Vite's SSR build leaves unbundled.
+ * We use esbuild to rebundle server.js + all deps into a single self-contained
+ * ESM file. A require() shim in the banner allows CJS packages (react-dom,
+ * etc.) to call require("util"/"stream"/…) at runtime through Node's resolver.
+ *
  * Run via: node scripts/vercel-build.mjs
  */
 
@@ -20,6 +26,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const out  = join(root, ".vercel", "output");
@@ -47,31 +54,95 @@ console.log("▶ Creating serverless function…");
 const fnDir = join(out, "functions", "_render.func");
 mkdirSync(fnDir, { recursive: true });
 
-// Copy the entire server bundle (server.js + assets/ chunks)
-cpSync(join(root, "dist", "server"), fnDir, { recursive: true });
+// ── 4a. Bundle server.js + ALL deps into a single self-contained file ─
+//
+// TanStack Start's Vite SSR build externalises packages like h3-v2,
+// @tanstack/router-core, seroval, react, react-dom, etc.
+//
+// Vercel's Build Output API v3 does NOT automatically provide node_modules
+// for manually-created functions — so the function crashes on boot.
+//
+// Fix A: esbuild --bundle inlines every npm dep from the project's
+//        node_modules, leaving only genuine Node.js built-ins external.
+//
+// Fix B: CJS packages (react-dom/server.node.js, etc.) call require()
+//        at runtime.  When those are bundled into an ESM file, the
+//        require() calls fail ("Dynamic require not supported").
+//        → Inject a real createRequire-based shim via the banner so
+//          those calls resolve correctly at runtime.
+// ─────────────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Function entry point.
+console.log("▶ Bundling server with esbuild (inlining all deps)…");
+const req = createRequire(import.meta.url);
+const esbuild = req("esbuild");
+
+// Node.js built-in module names (bare, without "node:" prefix)
+// These must stay external so the runtime provides them.
+const NODE_BUILTINS = [
+  "assert", "async_hooks", "buffer", "child_process", "cluster",
+  "console", "constants", "crypto", "dgram", "diagnostics_channel",
+  "dns", "domain", "events", "fs", "http", "http2", "https",
+  "inspector", "module", "net", "os", "path", "perf_hooks", "process",
+  "punycode", "querystring", "readline", "repl", "stream",
+  "string_decoder", "sys", "timers", "tls", "trace_events", "tty",
+  "url", "util", "v8", "vm", "wasi", "worker_threads", "zlib",
+];
+
+await esbuild.build({
+  entryPoints: [join(root, "dist", "server", "server.js")],
+  bundle: true,
+  platform: "node",
+  target: "node20",
+  format: "esm",
+
+  // ── What stays external ───────────────────────────────────────────
+  // "node:*"   — prefixed imports  (e.g. import { x } from "node:util")
+  // bare names — un-prefixed CJS requires (e.g. require("util"))
+  external: ["node:*", ...NODE_BUILTINS],
+
+  outfile: join(fnDir, "server-bundle.mjs"),
+
+  // server.js uses relative imports for the assets/ chunks in the same dir
+  absWorkingDir: join(root, "dist", "server"),
+
+  // ── CJS compat: inject a real require() into the ESM bundle ──────
+  // react-dom/server.node.js and other CJS packages call require("util"),
+  // require("stream"), etc. at runtime.  Without this shim they throw
+  // "Dynamic require of X is not supported" inside the esbuild wrapper.
+  banner: {
+    js: `
+import { createRequire as __cjsCreateRequire } from "node:module";
+const require = __cjsCreateRequire(import.meta.url);
+`,
+  },
+
+  define: {
+    "process.env.NODE_ENV": JSON.stringify("production"),
+  },
+
+  // Keep stack traces readable in Vercel logs
+  minify: false,
+});
+
+console.log("  ✓ server-bundle.mjs written");
+
+// ── 4b. Write the Vercel function entry point ──────────────────────
 //
-// server.js exports: { default: { fetch(Request): Promise<Response> } }
-// That's a standard Web Fetch API handler (Request → Response).
-//
+// server-bundle.mjs exports: { default: { fetch(Request): Promise<Response> } }
 // Vercel Node.js runtime calls: handler(req: IncomingMessage, res: ServerResponse)
-//
-// We bridge the two WITHOUT importing any external modules — everything needed
-// is already bundled inside server.js (h3-v2, async_hooks, etc.).
-// ─────────────────────────────────────────────────────────────────────────────
+// We bridge the two using only Node.js built-ins.
+// ─────────────────────────────────────────────────────────────────────
+
 writeFileSync(
   join(fnDir, "index.mjs"),
   `/**
  * Vercel serverless function — Node.js (IncomingMessage/ServerResponse)
  * → Web Fetch API (Request/Response) bridge.
  *
- * No external imports needed: server.js is fully self-contained.
+ * server-bundle.mjs is fully self-contained (all deps inlined by esbuild).
  */
-import { Readable } from "node:stream";
 import { Buffer } from "node:buffer";
-import server from "./server.js";
+import server from "./server-bundle.mjs";
 
 export default async function handler(req, res) {
   try {
@@ -89,7 +160,6 @@ export default async function handler(req, res) {
     }
 
     // ── Build Web Request ────────────────────────────────────────────
-    // Vercel IncomingMessage headers are already a plain object; Headers() accepts it.
     const webReq = new Request(url, {
       method:  req.method ?? "GET",
       headers: req.headers,
@@ -146,6 +216,7 @@ writeFileSync(
       runtime:      "nodejs20.x",
       handler:      "index.mjs",
       launcherType: "Nodejs",
+      shouldAddHelpers: false,
     },
     null,
     2,
